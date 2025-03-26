@@ -22,7 +22,7 @@ def normalize_bbox(bbox, img_width, img_height):
 
     return f"0 {x_center:.6f} {y_center:.6f} {w:.6f} {h:.6f}"
 
-def convert_annotations(csv_path, images_dir, labels_dir, video_id):
+def convert_annotations(csv_path, images_dir, labels_dir):
     """
     Converts the CSV annotations into the described format and saves them as text files.
 
@@ -33,10 +33,9 @@ def convert_annotations(csv_path, images_dir, labels_dir, video_id):
     """
     os.makedirs(labels_dir, exist_ok=True)
     df = pd.read_csv(csv_path)
-    df = df[df.video_id==video_id]
 
     for _, row in df.iterrows():
-        image_id = row["video_frame"]
+        image_id = row["image_id"]
         img_path = os.path.join(images_dir, f"{image_id}.jpg")
         txt_filename = os.path.join(labels_dir, f"{image_id}.txt")
 
@@ -64,18 +63,16 @@ def convert_annotations(csv_path, images_dir, labels_dir, video_id):
             for ann in annotations:
                 f.write(normalize_bbox(ann, img_width, img_height) + "\n")
 
-    print(f"Success! The formatted annotation text files for video {video_id} have been saved in:", labels_dir)
+    print(f"Success! The formatted annotation text files have been saved in:", labels_dir)
 
 
 if __name__ == "__main__":
-    for v in range(3):
-        IMG_DIR = f"tensorflow-great-barrier-reef/train_images/video_{v}/"
-        LABEL_DIR = f"tensorflow-great-barrier-reef/train_images/labels_{v}/"
+    IMG_DIR = f"tensorflow-great-barrier-reef/images/"
+    LABEL_DIR = f"tensorflow-great-barrier-reef/labels/"
 
-        convert_annotations(
-            csv_path="tensorflow-great-barrier-reef/train.csv",
-            images_dir=IMG_DIR,
-            labels_dir=LABEL_DIR,
-            video_id=v
-        )
+    convert_annotations(
+        csv_path="tensorflow-great-barrier-reef/train.csv",
+        images_dir=IMG_DIR,
+        labels_dir=LABEL_DIR,
+    )
 
