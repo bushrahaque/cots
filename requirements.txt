@@ -1,0 +1,19 @@
+# PyTorch and vision libraries
+torch>=2.0.0
+torchvision>=0.15.0
+tqdm>=4.65.0
+
+# Ultralytics YOLOv8
+ultralytics==8.1.27
+
+# Image processing
+opencv-python>=4.7.0.72
+Pillow>=9.4.0
+
+# Data manipulation
+pandas>=1.5.3
+numpy>=1.23.5
+
+# File handling
+PyYAML>=6.0
+

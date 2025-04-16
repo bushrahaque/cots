@@ -1,44 +1,71 @@
 import os
 import pandas as pd
-from sklearn.model_selection import train_test_split
+import shutil
 
-# Define paths
-TRAIN_CSV_PATH = "/Users/bushra/Documents/STA2453/tensorflow-great-barrier-reef/train.csv"
-OUTPUT_DIR = "/Users/bushra/Documents/STA2453/tensorflow-great-barrier-reef/"
+# EXISTING DATA DIRS
+LABELS_CSV_PATH = '/Users/bushra/Documents/STA2453/cots/data/all_labels.csv'
 
-# Image and label directories
-IMAGE_DIRS = [f"/Users/bushra/Documents/STA2453/tensorflow-great-barrier-reef/train_images/video_{i}" for i in range(3)]
-LABEL_DIRS = [f"/Users/bushra/Documents/STA2453/tensorflow-great-barrier-reef/train_images/labels_{i}" for i in range(3)]
+IMAGES_DIR = '/Users/bushra/Documents/STA2453/tensorflow-great-barrier-reef/images'
+LABELS_DIR = '/Users/bushra/Documents/STA2453/tensorflow-great-barrier-reef/labels'
 
-def get_file_path(image_id, video_id):
+# FORMATTED DATA DIRS
+DATA_DIR = '/Users/bushra/Documents/STA2453/cots/data/'
+
+
+def split_data(labels_df, split_images_dir, split_labels_dir, orig_images_dir, orig_labels_dir):
     """
-    Returns the full image path and label path for a given image_id and video_id.
+    Copies image and label files from the original dataset directories to the specified split directories
+    based on the entries in the provided DataFrame.
+
+    Inputs:
+    - labels_df (pd.DataFrame): DataFrame containing the image_id per frame in each video.
+    - split_images_dir (str): Path to the destination directory for the image split (e.g., train/images).
+    - split_labels_dir (str): Path to the destination directory for the label split (e.g., train/labels).
+    - orig_images_dir (str): Path to the original directory containing image files.
+    - orig_labels_dir (str): Path to the original directory containing label files.
+
+    Outputs:
+    - None
     """
-    image_path = os.path.join(IMAGE_DIRS[video_id], f"{image_id}.jpg")
-    label_path = os.path.join(LABEL_DIRS[video_id], f"{image_id}.txt")
-    
-    return image_path, label_path
+    for _, row in labels_df.iterrows():
+        # Construct full paths to the original image and label files
+        image_path = os.path.join(orig_images_dir, f"{row['image_id']}.jpg")
+        label_path = os.path.join(orig_labels_dir, f"{row['image_id']}.txt")
 
-def split_dataset(test_size=0.2, random_state=2453):
-    """
-    Splits train.csv into train/test splits and saves them as CSVs.
-    """
-    # Load full dataset
-    df = pd.read_csv(TRAIN_CSV_PATH)
+        # Copy files if the image exists
+        if os.path.exists(image_path):
+            shutil.copy(image_path, os.path.join(split_images_dir, f"{row['image_id']}.jpg"))
 
-    # Map image_id to full image and label paths
-    df["image_path"], df["label_path"] = zip(*df.apply(lambda row: get_file_path(row["video_frame"], row["video_id"]), axis=1))
+            # Copy label file only if it exists
+            if os.path.exists(label_path):
+                shutil.copy(label_path, os.path.join(split_labels_dir, f"{row['image_id']}.txt"))
+        else:
+            print(f"Missing image file for {row['image_id']}")
 
-    # Train-test split and save
-    train_df, test_df = train_test_split(df, test_size=test_size, random_state=random_state)
+    return None
 
-    train_df.to_csv(os.path.join(OUTPUT_DIR, "train_split.csv"), index=False)
-    test_df.to_csv(os.path.join(OUTPUT_DIR, "test_split.csv"), index=False)
-
-    print("Train-test split completed.")
-    print(f"Train set: {len(train_df)} samples")
-    print(f"Test set: {len(test_df)} samples")
 
 if __name__ == "__main__":
-    split_dataset()
+    
+    # Create the directory structure for train, val, and test splits
+    for split in ['train', 'val', 'test']:
+        for _type in ['images', 'labels']:
+            os.makedirs(f'/Users/bushra/Documents/STA2453/cots/data/{split}/{_type}', exist_ok=True)
+
+    # Read the CSV file that contains split information
+    labels_df = pd.read_csv(LABELS_CSV_PATH)
+
+    # Map each video ID to the appropriate data split
+    for v, split in zip([0, 1, 2], ['train', 'test', 'val']):
+        SPLIT_IMAGES_DIR = os.path.join(DATA_DIR, f"{split}/images")
+        SPLIT_LABELS_DIR = os.path.join(DATA_DIR, f"{split}/labels")
+
+        # Call the function to copy the files into the right folders
+        split_data(
+            labels_df.loc[labels_df["video_id"] == v],
+            SPLIT_IMAGES_DIR,
+            SPLIT_LABELS_DIR,
+            IMAGES_DIR,
+            LABELS_DIR
+        )
 

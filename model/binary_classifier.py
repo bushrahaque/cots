@@ -3,77 +3,51 @@ import pandas as pd
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import torchvision.transforms as transforms
-from torchvision import models
-from torch.utils.data import DataLoader, Dataset
-import cv2
-import numpy as np
+from torch.utils.data import DataLoader
 from tqdm import tqdm
-from performance_metrics import evaluate_classifier
+from cots.model.binary_classifier_classes import transform, COTSDataset, COTSClassifier
 
-# Paths
-TRAIN_CSV = "/Users/bushra/Documents/STA2453/tensorflow-great-barrier-reef/train_split.csv"
-TEST_CSV = "/Users/bushra/Documents/STA2453/tensorflow-great-barrier-reef/test_split.csv"
-OUTPUT_MODEL_PATH = "/Users/bushra/Documents/STA2453/cots/model/binary_classifier.pth"
-PERFORMANCE_OUTPUT_PATH = "/Users/bushra/Documents/STA2453/cots/model/outputs/binary_classifier_performance.txt"
+# PATHS
+DATA_DIR = "/Users/bushra/Documents/STA2453/cots/data/"
+CLASSIFER_MODEL_PATH = "/Users/bushra/Documents/STA2453/cots/model/outputs/binary_classifier.pth"
 
-# Define Dataset
-class COTSDataset(Dataset):
-    def __init__(self, csv_file, transform=None):
-        self.data = pd.read_csv(csv_file)
-        self.transform = transform
 
-    def __len__(self):
-        return len(self.data)
+def train_cots_classifier(num_epochs=1, batch_size=16, learning_rate=0.01):
+    """
+    Trains a CNN-based binary classifier to detect the presence of COTS in underwater images.
+    The model has been pre-defined in the global_definitions.py module.
 
-    def __getitem__(self, idx):
-        img_path = self.data.iloc[idx]["image_path"]
-        label = 1 if self.data.iloc[idx]["annotations"] != "[]" else 0  # Binary label (COTS present or not)
+    Inputs:
+    - num_epochs (int): Number of epochs to train the model.
+    - batch_size (int): Number of samples per training batch.
+    - learning_rate (float): Learning rate for the optimizer.
 
-        image = cv2.imread(img_path)
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)  # Convert to RGB
-        image = cv2.resize(image, (224, 224))  # Resize for CNN
-        
-        if self.transform:
-            image = self.transform(image)
-
-        return image, label
-
-# Define CNN Model
-class COTSClassifier(nn.Module):
-    def __init__(self):
-        super(COTSClassifier, self).__init__()
-        self.model = models.resnet18(pretrained=True)
-        self.model.fc = nn.Linear(self.model.fc.in_features, 2)  # Binary classification (COTS vs. No COTS)
-
-    def forward(self, x):
-        return self.model(x)
-
-# Training Function
-def train_cots_classifier(num_epochs=1, batch_size=16, learning_rate=0.001):
+    Outputs:
+    - None
+    """
     print("Starting CNN Training for COTS Detection...")
 
-    # Data Transforms
-    transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-    ])
-
-    # Load train dataset
-    train_dataset = COTSDataset(TRAIN_CSV, transform=transform)
+    # Prepare training dataset
+    TRAIN_IMAGES_DIR = os.path.join(DATA_DIR, "train/images")
+    TRAIN_LABELS_DIR = os.path.join(DATA_DIR, "train/labels")
+    train_dataset = COTSDataset(TRAIN_IMAGES_DIR, TRAIN_LABELS_DIR, transform=transform)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
-    # Load test dataset
-    test_dataset = COTSDataset(TEST_CSV, transform=transform)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+    # Prepare validation dataset
+    VAL_IMAGES_DIR = os.path.join(DATA_DIR, "val/images")
+    VAL_LABELS_DIR = os.path.join(DATA_DIR, "val/labels")
+    val_dataset = COTSDataset(VAL_IMAGES_DIR, VAL_LABELS_DIR, transform=transform)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
-    # Initialize model
+    # Initialize model, loss function, optimizer
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = COTSClassifier().to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
-    # Train
+    best_val_loss = float('Inf')
+
+    # Training loop
     for epoch in tqdm(range(num_epochs), desc="Training Progress", leave=True):
         model.train()
         running_loss = 0.0
@@ -90,20 +64,37 @@ def train_cots_classifier(num_epochs=1, batch_size=16, learning_rate=0.001):
 
             running_loss += loss.item()
 
-        print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {running_loss/len(train_loader):.4f}")
+        print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {running_loss / len(train_loader):.4f}")
 
-    # Save trained model
-    torch.save(model.state_dict(), OUTPUT_MODEL_PATH)
-    print(f"Model saved to {OUTPUT_MODEL_PATH}")
+        # Validation
+        model.eval()
+        val_loss = 0.0
+        correct = 0
+        total = 0
 
-    # Evaluate model on test and save results
-    metrics = evaluate_classifier(model, test_loader, device)
+        with torch.no_grad():
+            for images, labels in val_loader:
+                images, labels = images.to(device), labels.to(device)
 
-    with open(PERFORMANCE_OUTPUT_PATH, "w") as f:
-        for key, value in metrics.items():
-            f.write(f"{key}: {value:.4f}\n")
+                outputs = model(images)
+                loss = criterion(outputs, labels)
+                val_loss += loss.item()
 
-    print(f"Model performance for test saved in {PERFORMANCE_OUTPUT_PATH}")
+                # Accuracy calculation
+                _, predicted = torch.max(outputs, 1)
+                correct += (predicted == labels).sum().item()
+                total += labels.size(0)
+
+        avg_val_loss = val_loss / len(val_loader)
+        val_accuracy = correct / total
+        print(f"Epoch [{epoch+1}/{num_epochs}] Validation Loss: {avg_val_loss:.4f}, Accuracy: {val_accuracy:.4f}")
+
+        # Save model if validation loss improves
+        if avg_val_loss < best_val_loss:
+            best_val_loss = avg_val_loss
+            torch.save(model.state_dict(), CLASSIFER_MODEL_PATH)
+            print(f"New best model saved to {CLASSIFER_MODEL_PATH}")
+
 
 if __name__ == "__main__":
     train_cots_classifier()

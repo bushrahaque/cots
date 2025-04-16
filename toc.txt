@@ -1,30 +1,35 @@
-STA2453/cots/
-|── toc.txt
+cots/
+|── bounded_image.jpg                       # Sample image from dataset with bounding box
+|── global_paths.py                         # List of all relevant paths, for referencing
+|── README.md                               # Project overview
+|── requirements.txt                        # Required libraries
+|── toc.txt                                 # Table of contents for repository navigation
+|
+|── data/
+|   |── all_labels.csv                      # Image metadata and bounding box annotations
+|   |── test/ 
+|       |── images/                         # Test image JPGs
+|       |── labels/                         # Test image annotation TXT files
+|   |── train/ 
+|       |── images/                         # Train image JPGs
+|       |── labels/                         # Train image annotation TXT files
+|   |── val/ 
+|       |── images/                         # Validation image JPGs
+|       |── labels/                         # Validation image annotation TXT files
+|
 │── data_processing/
-|   ├── format_annotations.py           # Converts annotations to YOLO-digestable format
-│   ├── split_train_test.py             # Splits data into train/test sets
-│   ├── image_tuning.py                 # Preprocesses images for YOLO
+|   ├── format_annotations.py               # Converts bounding box annotations according to YOLO format
+│   ├── restructure_image_directories.py    # Merges all images from original directories into a single directory
+│   ├── split_train_test.py                 # Creates directories for train/val/test according to YOLO format
 │
 │── model/
-│   ├── pipeline.py                     # Main script for model training/inference
-│   ├── binary_classifier.py            # CNN or XGBoost model for binary classification
-│   ├── yolo_model.py                   # YOLO model for object detection
-│   ├── ensemble.py                     # Combines both models
-│   ├── performance.py                  # Evaluates models and logs metrics
-│   ├── tuning.py                       # Hyperparameter tuning for both models
-│
-│── outputs/                            # Stores predictions and evaluation results
-│   ├── binary_preds.txt
-│   ├── yolo_preds.txt
-│   ├── model_performance.txt
-
-STA2453/tensorflow-great-barrier-reef
-|── train.csv
-│── train_images/
-│   ├── formatted_labels_0/  
-│   ├── formatted_labels_1/
-│   ├── formatted_labels_2/
-│   ├── video_0/
-│   ├── video_1/
-│   ├── video_2/
+│   ├── binary_classifier_classes.py        # Global class definitions for CNN models
+│   ├── binary_classifier.py                # Trains binary classifier
+│   ├── ensemble_predictions.py             # Makes predictions for test set
+│   ├── yolo_data_config.yaml               # Indicates directory paths required for YOLO
+│   ├── yolo_object_detection.py            # Tunes YOLO model
+|   |── outputs/
+|       |── binary_classifier.pth           # Trained CNN/binary classifier model object
+|       |── yolov8n_tuned.pt                # Tuned YOLO v8n model object
+|       |── yolov8n.pt                      # Base YOLO v8n model object
 
