@@ -1,5 +1,6 @@
-names: ['COTS']
 nc: 1
-train: /Users/bushra/Documents/STA2453/tensorflow-great-barrier-reef/images/train
-val: /Users/bushra/Documents/STA2453/tensorflow-great-barrier-reef/images/val
-test: /Users/bushra/Documents/STA2453/tensorflow-great-barrier-reef/images/test
+names: ['COTS']
+path: /Users/bushra/Documents/STA2453/cots/data/
+train: train
+val: val
+test: test
