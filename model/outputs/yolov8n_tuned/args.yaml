@@ -1,7 +1,7 @@
 task: detect
 mode: train
 model: yolov8n.pt
-data: /kaggle/working/gbr.yaml
+data: /Users/bushra/Documents/STA2453/cots/model/yolo_data_config.yaml
 epochs: 15
 time: null
 patience: 100
@@ -12,8 +12,8 @@ save_period: -1
 cache: false
 device: null
 workers: 8
-project: /kaggle/working
-name: yolov8n-gbr
+project: /Users/bushra/Documents/STA2453/cots/model/outputs
+name: yolov8n_tuned
 exist_ok: true
 pretrained: true
 optimizer: Adam
@@ -101,4 +101,4 @@ auto_augment: randaugment
 erasing: 0.4
 cfg: null
 tracker: botsort.yaml
-save_dir: /kaggle/working/yolov8n-gbr
+save_dir: /Users/bushra/Documents/STA2453/cots/model/outputs/yolov8n_tuned
