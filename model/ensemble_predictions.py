@@ -13,7 +13,7 @@ LABELS_CSV_PATH = '/Users/bushra/Documents/STA2453/cots/data/all_labels.csv'
 DATA_DIR = "/Users/bushra/Documents/STA2453/cots/data/"
 
 YOLO_DATASET_YAML = "/Users/bushra/Documents/STA2453/cots/model/yolo_data_config.yaml"
-TUNED_YOLO_MODEL_PATH = "/Users/bushra/Documents/STA2453/cots/model/outputs/yolov8n_tuned.pt"
+TUNED_YOLO_MODEL_PATH = "/Users/bushra/Documents/STA2453/cots/model/outputs/yolov8n_tuned/weights/best.pt"
 CLASSIFIER_MODEL_PATH = "/Users/bushra/Documents/STA2453/cots/model/outputs/binary_classifier.pth"
 
 
