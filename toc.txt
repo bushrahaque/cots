@@ -30,6 +30,6 @@ cots/
 │   ├── yolo_object_detection.py            # Tunes YOLO model
 |   |── outputs/
 |       |── binary_classifier.pth           # Trained CNN/binary classifier model object
-|       |── yolov8n_tuned.pt                # Tuned YOLO v8n model object
 |       |── yolov8n.pt                      # Base YOLO v8n model object
+|       |── yolov8n_tuned/                  # Results and weights from trained model
 
